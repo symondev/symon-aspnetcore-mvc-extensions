@@ -16,6 +16,7 @@
         public ApiResult(int errorCode, string errorMessage)
         {
             Success = false;
+            ErrorCode = errorCode;
             ErrorMessage = errorMessage;
         }
 

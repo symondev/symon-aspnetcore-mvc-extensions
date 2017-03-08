@@ -14,10 +14,13 @@ namespace Symon.AspNetCore.Mvc.Extensions.Exception
 {
     public static class ExceptionHandlerAppBuilderExtensions
     {
-        public static void UseSymonExceptionHandler(this IApplicationBuilder app, ExceptionHandlerOptions options = null)
+        public static void UseSymonExceptionHandler(this IApplicationBuilder app, ExceptionMailHandlerOptions options = null)
         {
             if (options != null)
             {
+                var serviceCollection = app.ApplicationServices.GetService<IServiceCollection>();
+                serviceCollection.AddSingleton(options);
+
                 Options.Create(options);
             }
 
@@ -29,7 +32,8 @@ namespace Symon.AspNetCore.Mvc.Extensions.Exception
 
         private static async Task Process(HttpContext context)
         {
-            var options = context.RequestServices.GetService<IOptions<ExceptionHandlerOptions>>()?.Value;
+            
+            var mailOptions = context.RequestServices.GetService<ExceptionMailHandlerOptions>();
 
             var mailSender = context.RequestServices.GetService<IMailSender>();
 
@@ -42,11 +46,11 @@ namespace Symon.AspNetCore.Mvc.Extensions.Exception
             var errMessage = BuildErrorMessage(exceptionHandler.Error, context);
             logger.LogError(errMessage);
 
-            if (options != null && mailSender != null)
+            if (mailOptions != null && mailSender != null)
             {
                 try
                 {
-                    await mailSender.SendEmailAsync(options.MailTos, options.MailSubject, errMessage);
+                    await mailSender.SendEmailAsync(mailOptions.MailTos, mailOptions.MailSubject, errMessage);
                 }
                 catch (System.Exception ex2)
                 {
